@@ -69,7 +69,7 @@ resource "google_dns_record_set" "cname" {
 
   project      = var.gcp_project_id
   name         = var.domain
-  managed_zone = var.dns_managed_zone_name
+  managed_zone = var.domain_zone_name
   type         = "CNAME"
   ttl          = 300
   rrdatas      = [google_compute_global_address.website.address]
