@@ -40,7 +40,7 @@ resource "google_compute_backend_bucket" "website" {
 resource "google_compute_managed_ssl_certificate" "website" {
   name = "${var.name_prefix}-cert"
   managed {
-    domains = [var.website_domain]
+    domains = [var.domain]
   }
 }
 
@@ -65,10 +65,10 @@ resource "google_compute_global_forwarding_rule" "default" {
 }
 
 resource "google_dns_record_set" "cname" {
-  count = var.dns_managed_zone_name != null ? 1 : 0
+  count = var.domain_zone_name != null ? 1 : 0
 
   project      = var.gcp_project_id
-  name         = var.website_domain
+  name         = var.domain
   managed_zone = var.dns_managed_zone_name
   type         = "CNAME"
   ttl          = 300

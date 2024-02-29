@@ -2,7 +2,7 @@ variable "name_prefix" {
   type = string
 }
 
-variable "website_domain" {
+variable "domain" {
   type = string
 }
 
@@ -16,7 +16,7 @@ variable "gcp_api_services_list" {
   default = ["storage.googleapis.com", "compute.googleapis.com"]
 }
 
-variable "dns_managed_zone_name" {
+variable "domain_zone_name" {
   type    = string
   default = null
 }
