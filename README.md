@@ -30,8 +30,9 @@
 
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
-| <a name="input_gcp_api_services_list"></a> [gcp\_api\_services\_list](#input\_gcp\_api\_services\_list) | list of GCP API services to turn on | `list(string)` | `[""]` | no |
+| <a name="input_gcp_api_services_list"></a> [gcp\_api\_services\_list](#input\_gcp\_api\_services\_list) | List of GCP API services to turn on | `list(string)` | `[""]` | no |
 | <a name="input_gcp_project_id"></a> [gcp\_project\_id](#input\_gcp\_project\_id) | ID of the GCP project | `string` | `null` | no |
+| <a name="input_dns_managed_zone_name"></a> [dns\_managed\_zone\_name](#input\_dns\_managed\_zone\_name) | Domain zone for record | `string` | `null` | no |
 | <a name="input_name_prefix"></a> [name\_prefix](#input\_name\_prefix) | Name prefix for the resources | `string` | n/a | yes |
 | <a name="input_website_domain"></a> [website\_domain](#input\_website\_domain) | Domain name of the website | `string` | n/a | yes |
 

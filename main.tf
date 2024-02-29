@@ -63,3 +63,14 @@ resource "google_compute_global_forwarding_rule" "default" {
   port_range            = "443"
   target                = google_compute_target_https_proxy.website.self_link
 }
+
+resource "google_dns_record_set" "cname" {
+  count = var.dns_managed_zone_name != null ? 1 : 0
+
+  project      = var.gcp_project_id
+  name         = var.website_domain
+  managed_zone = var.dns_managed_zone_name
+  type         = "CNAME"
+  ttl          = 300
+  rrdatas      = [google_compute_global_address.website.address]
+}
