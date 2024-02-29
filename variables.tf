@@ -6,10 +6,12 @@ variable "website_domain" {
   type = string
 }
 
-variable "google_project_id" {
-  type = string
+variable "gcp_project_id" {
+  type    = string
+  default = null
 }
 
-variable "google_region" {
-  type = string
+variable "gcp_api_services_list" {
+  type    = list(string)
+  default = ["storage.googleapis.com", "compute.googleapis.com"]
 }
