@@ -1,3 +1,7 @@
+locals {
+  gcp_api_services_lists = can(google_project_service.project) ? google_project_service.project[*] : []
+}
+
 resource "google_project_service" "project" {
   for_each = toset(var.gcp_api_services_list)
   project  = var.gcp_project_id
@@ -18,16 +22,19 @@ resource "google_storage_bucket" "website" {
     main_page_suffix = "index.html"
     not_found_page   = "index.html"
   }
+  depends_on = [local.gcp_api_services_lists]
 }
 
 resource "google_storage_default_object_access_control" "website_read" {
-  bucket = google_storage_bucket.website.name
-  role   = "READER"
-  entity = "allUsers"
+  bucket     = google_storage_bucket.website.name
+  role       = "READER"
+  entity     = "allUsers"
+  depends_on = [local.gcp_api_services_lists]
 }
 
 resource "google_compute_global_address" "website" {
-  name = "${var.name_prefix}-lb-ip"
+  name       = "${var.name_prefix}-lb-ip"
+  depends_on = [local.gcp_api_services_lists]
 }
 
 resource "google_compute_backend_bucket" "website" {
@@ -35,6 +42,7 @@ resource "google_compute_backend_bucket" "website" {
   description = "Contains files needed by the website"
   bucket_name = google_storage_bucket.website.name
   enable_cdn  = true
+  depends_on  = [local.gcp_api_services_lists]
 }
 
 resource "google_compute_managed_ssl_certificate" "website" {
@@ -42,17 +50,20 @@ resource "google_compute_managed_ssl_certificate" "website" {
   managed {
     domains = [var.domain]
   }
+  depends_on = [local.gcp_api_services_lists]
 }
 
 resource "google_compute_url_map" "website" {
   name            = "${var.name_prefix}-url-map"
   default_service = google_compute_backend_bucket.website.self_link
+  depends_on      = [local.gcp_api_services_lists]
 }
 
 resource "google_compute_target_https_proxy" "website" {
   name             = "${var.name_prefix}-target-proxy"
   url_map          = google_compute_url_map.website.self_link
   ssl_certificates = [google_compute_managed_ssl_certificate.website.self_link]
+  depends_on       = [local.gcp_api_services_lists]
 }
 
 resource "google_compute_global_forwarding_rule" "default" {
@@ -62,6 +73,7 @@ resource "google_compute_global_forwarding_rule" "default" {
   ip_protocol           = "TCP"
   port_range            = "443"
   target                = google_compute_target_https_proxy.website.self_link
+  depends_on            = [local.gcp_api_services_lists]
 }
 
 resource "google_dns_record_set" "cname" {

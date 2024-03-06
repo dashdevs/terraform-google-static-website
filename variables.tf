@@ -13,7 +13,7 @@ variable "gcp_project_id" {
 
 variable "gcp_api_services_list" {
   type    = list(string)
-  default = [""]
+  default = []
 }
 
 variable "domain_zone_name" {
