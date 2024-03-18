@@ -25,3 +25,12 @@ variable "google_project_id" {
   type    = string
   default = null
 }
+
+variable "cors_allowed_origins" {
+  type = string
+}
+
+variable "cors_allowed_methods_additional" {
+  type    = string
+  default = null
+}

@@ -1,5 +1,8 @@
 locals {
-  gcp_api_services_lists = can(google_project_service.project) ? google_project_service.project[*] : []
+  gcp_api_services_lists    = can(google_project_service.project) ? google_project_service.project[*] : []
+  cors_allowed_default      = ["GET", "HEAD"]
+  сreate_cors_configuration = var.cors_allowed_origins != null ? true : false
+  cors_allowed_methods      = var.cors_allowed_methods_additional != null ? concat(local.cors_allowed_default, var.cors_allowed_methods_additional) : local.cors_allowed_default
 }
 
 resource "google_project_service" "project" {
@@ -22,18 +25,20 @@ resource "google_storage_bucket" "website" {
     main_page_suffix = "index.html"
     not_found_page   = "index.html"
   }
+  cors {
+    origin          = var.cors_allowed_origins
+    method          = local.cors_allowed_methods
+    response_header = ["*"]
+    max_age_seconds = 3600
+  }
+
   depends_on = [local.gcp_api_services_lists]
 }
 
 resource "google_storage_default_object_access_control" "website_read" {
   bucket     = google_storage_bucket.website.name
-  role       = "READER"
-  entity     = "allUsers"
-  depends_on = [local.gcp_api_services_lists]
-}
-
-resource "google_compute_global_address" "website" {
-  name       = "${var.name_prefix}-lb-ip"
+  role       = "OWNER"
+  entity     = "domain-${var.domain}"
   depends_on = [local.gcp_api_services_lists]
 }
 
@@ -69,7 +74,7 @@ resource "google_compute_target_https_proxy" "website" {
 resource "google_compute_global_forwarding_rule" "default" {
   name                  = "${var.name_prefix}-forwarding-rule"
   load_balancing_scheme = "EXTERNAL"
-  ip_address            = google_compute_global_address.website.address
+  ip_address            = google_storage_bucket.website.self_link
   ip_protocol           = "TCP"
   port_range            = "443"
   target                = google_compute_target_https_proxy.website.self_link
@@ -84,5 +89,5 @@ resource "google_dns_record_set" "cname" {
   managed_zone = var.domain_zone_name
   type         = "CNAME"
   ttl          = 300
-  rrdatas      = [google_compute_global_address.website.address]
+  rrdatas      = [google_storage_bucket.website.self_link]
 }
