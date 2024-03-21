@@ -27,7 +27,8 @@ variable "google_project_id" {
 }
 
 variable "cors_allowed_origins" {
-  type = string
+  type    = list(string)
+  default = null
 }
 
 variable "cors_allowed_methods_additional" {

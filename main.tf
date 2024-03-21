@@ -35,7 +35,7 @@ resource "google_storage_bucket" "website" {
   depends_on = [local.gcp_api_services_lists]
 }
 
-resource "google_storage_default_object_access_control" "website_read" {
+resource "google_storage_default_object_access_control" "website" {
   bucket     = google_storage_bucket.website.name
   role       = "OWNER"
   entity     = "domain-${var.domain}"
@@ -69,16 +69,6 @@ resource "google_compute_target_https_proxy" "website" {
   url_map          = google_compute_url_map.website.self_link
   ssl_certificates = [google_compute_managed_ssl_certificate.website.self_link]
   depends_on       = [local.gcp_api_services_lists]
-}
-
-resource "google_compute_global_forwarding_rule" "default" {
-  name                  = "${var.name_prefix}-forwarding-rule"
-  load_balancing_scheme = "EXTERNAL"
-  ip_address            = google_storage_bucket.website.self_link
-  ip_protocol           = "TCP"
-  port_range            = "443"
-  target                = google_compute_target_https_proxy.website.self_link
-  depends_on            = [local.gcp_api_services_lists]
 }
 
 resource "google_dns_record_set" "cname" {
