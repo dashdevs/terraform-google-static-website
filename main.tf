@@ -1,12 +1,31 @@
 locals {
-  gcp_api_services_lists    = can(google_project_service.project) ? google_project_service.project[*] : []
-  cors_allowed_default      = ["GET", "HEAD"]
-  сreate_cors_configuration = var.cors_allowed_origins != null ? true : false
-  cors_allowed_methods      = var.cors_allowed_methods_additional != null ? concat(local.cors_allowed_default, var.cors_allowed_methods_additional) : local.cors_allowed_default
+  gcp_required_api_services = ["storage.googleapis.com", "compute.googleapis.com", "cloudresourcemanager.googleapis.com"]
+  # gcp_existing_api_services  = contains(data.google_project_service.existing_services[*], local.gcp_required_api_services)
+  # gcp_existing_api_storage   = data.google_project_service.existing_services[*]
+  # gcp_existing_api_compute   = contains(local.gcp_required_api_services, data.google_project_service.existing_services[*])
+  # gcp_existing_api_cloud     = contains(local.gcp_required_api_services, data.google_project_service.existing_services[*])
+  gcp_dependend_api_services = can(google_project_service.service) ? google_project_service.service[*] : []
+  cors_allowed_default       = ["GET", "HEAD"]
+  create_cors_configuration  = var.cors_allowed_origins != null ? true : false
+  cors_allowed_methods       = var.cors_allowed_methods_additional != null ? concat(local.cors_allowed_default, var.cors_allowed_methods_additional) : local.cors_allowed_default
+  region_parts               = split("-", var.region)
+  location_map = {
+    "europe"       = "EU"
+    "me"           = "EU"
+    "us"           = "US"
+    "northamerica" = "US"
+    "asia"         = "ASIA"
+  }
+  bucket_location = local.location_map[local.region_parts[0]]
 }
 
-resource "google_project_service" "project" {
-  for_each = toset(var.gcp_api_services_list)
+data "google_project_service" "existing_services" {
+  for_each = toset(local.gcp_required_api_services)
+  service  = each.key
+}
+
+resource "google_project_service" "service" {
+  for_each = toset(local.gcp_required_api_services)
   project  = var.gcp_project_id
   service  = each.key
 
@@ -15,18 +34,20 @@ resource "google_project_service" "project" {
     update = "10m"
   }
 
-  disable_dependent_services = true
+  disable_dependent_services = var.disable_created_services_on_destroy
+  disable_on_destroy         = var.disable_created_services_on_destroy
 }
 
 resource "google_storage_bucket" "website" {
   name     = var.name_prefix
-  location = "US"
+  location = local.bucket_location
   website {
     main_page_suffix = "index.html"
     not_found_page   = "index.html"
   }
+
   dynamic "cors" {
-    for_each = local.сreate_cors_configuration ? [1] : []
+    for_each = local.create_cors_configuration ? [1] : []
     content {
       origin          = var.cors_allowed_origins
       method          = local.cors_allowed_methods
@@ -35,19 +56,21 @@ resource "google_storage_bucket" "website" {
     }
   }
 
-  depends_on = [local.gcp_api_services_lists]
+  depends_on = [local.gcp_dependend_api_services]
 }
 
 resource "google_compute_global_address" "website" {
   name = "${var.name_prefix}-lb-ip"
+
+  depends_on = [local.gcp_dependend_api_services]
 }
 
 resource "google_storage_default_object_access_control" "website" {
   bucket = google_storage_bucket.website.name
-  role   = "OWNER"
+  role   = "READER"
   entity = "allUsers"
 
-  depends_on = [local.gcp_api_services_lists]
+  depends_on = [local.gcp_dependend_api_services]
 }
 
 resource "google_compute_backend_bucket" "website" {
@@ -56,7 +79,7 @@ resource "google_compute_backend_bucket" "website" {
   bucket_name = google_storage_bucket.website.name
   enable_cdn  = true
 
-  depends_on = [local.gcp_api_services_lists]
+  depends_on = [local.gcp_dependend_api_services]
 }
 
 resource "google_compute_managed_ssl_certificate" "website" {
@@ -65,7 +88,7 @@ resource "google_compute_managed_ssl_certificate" "website" {
     domains = [var.domain]
   }
 
-  depends_on = [local.gcp_api_services_lists]
+  depends_on = [local.gcp_dependend_api_services]
 }
 
 resource "google_compute_url_map" "website" {
@@ -77,7 +100,7 @@ resource "google_compute_url_map" "website" {
     https_redirect         = true
   }
 
-  depends_on = [local.gcp_api_services_lists]
+  depends_on = [local.gcp_dependend_api_services]
 }
 
 resource "google_compute_target_https_proxy" "website" {
@@ -85,7 +108,7 @@ resource "google_compute_target_https_proxy" "website" {
   url_map          = google_compute_url_map.website.self_link
   ssl_certificates = [google_compute_managed_ssl_certificate.website.self_link]
 
-  depends_on = [local.gcp_api_services_lists]
+  depends_on = [local.gcp_dependend_api_services]
 }
 
 resource "google_compute_global_forwarding_rule" "rule" {
@@ -96,7 +119,7 @@ resource "google_compute_global_forwarding_rule" "rule" {
   port_range            = "443"
   target                = google_compute_target_https_proxy.website.self_link
 
-  depends_on = [local.gcp_api_services_lists]
+  depends_on = [local.gcp_dependend_api_services]
 }
 
 resource "google_dns_record_set" "record" {

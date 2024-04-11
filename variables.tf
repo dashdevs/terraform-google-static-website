@@ -35,3 +35,17 @@ variable "cors_allowed_methods_additional" {
   type    = string
   default = null
 }
+
+variable "bucket_location" {
+  type    = string
+  default = "US"
+}
+
+variable "disable_created_services_on_destroy" {
+  type    = string
+  default = true
+}
+
+variable "region" {
+  type = string
+}
