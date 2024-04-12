@@ -10,6 +10,6 @@
 #   value = local.gcp_existing_api_compute
 # }
 
-# output "test3" {
-#   value = local.gcp_existing_api_cloud
-# }
+output "gcp_dependend_api_services" {
+  value = local.gcp_dependend_api_services
+}

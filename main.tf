@@ -1,9 +1,5 @@
 locals {
-  gcp_required_api_services = ["storage.googleapis.com", "compute.googleapis.com", "cloudresourcemanager.googleapis.com"]
-  # gcp_existing_api_services  = contains(data.google_project_service.existing_services[*], local.gcp_required_api_services)
-  # gcp_existing_api_storage   = data.google_project_service.existing_services[*]
-  # gcp_existing_api_compute   = contains(local.gcp_required_api_services, data.google_project_service.existing_services[*])
-  # gcp_existing_api_cloud     = contains(local.gcp_required_api_services, data.google_project_service.existing_services[*])
+  gcp_required_api_services  = ["storage.googleapis.com", "compute.googleapis.com", "cloudresourcemanager.googleapis.com"]
   gcp_dependend_api_services = can(google_project_service.service) ? google_project_service.service[*] : []
   cors_allowed_default       = ["GET", "HEAD"]
   create_cors_configuration  = var.cors_allowed_origins != null ? true : false
@@ -17,11 +13,6 @@ locals {
     "asia"         = "ASIA"
   }
   bucket_location = local.location_map[local.region_parts[0]]
-}
-
-data "google_project_service" "existing_services" {
-  for_each = toset(local.gcp_required_api_services)
-  service  = each.key
 }
 
 resource "google_project_service" "service" {
