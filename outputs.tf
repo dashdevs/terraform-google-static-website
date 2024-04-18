@@ -1,3 +1,3 @@
-output "website_ip_address" {
-  value = google_compute_global_address.website.address
-}
+# output "website_ip_address" {
+#   value = google_compute_global_address.website.address
+# }

@@ -11,11 +11,6 @@ variable "gcp_project_id" {
   default = null
 }
 
-variable "gcp_api_services_list" {
-  type    = list(string)
-  default = []
-}
-
 variable "domain_zone_name" {
   type    = string
   default = null
