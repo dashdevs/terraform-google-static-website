@@ -44,3 +44,8 @@ variable "disable_created_services_on_destroy" {
 variable "region" {
   type = string
 }
+
+variable "gcp_api_services_to_keep_upon_destroy" {
+  type    = list(string)
+  default = []
+}

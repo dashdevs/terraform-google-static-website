@@ -1,5 +1,15 @@
 locals {
-  gcp_required_api_services  = ["storage.googleapis.com", "compute.googleapis.com", "cloudresourcemanager.googleapis.com"]
+  gcp_required_api_services = merge(
+    {
+      "storage.googleapis.com"              = contains(var.gcp_api_services_to_keep_upon_destroy, "storage.googleapis.com")
+      "compute.googleapis.com"              = contains(var.gcp_api_services_to_keep_upon_destroy, "compute.googleapis.com")
+      "cloudresourcemanager.googleapis.com" = contains(var.gcp_api_services_to_keep_upon_destroy, "cloudresourcemanager.googleapis.com")
+    },
+    var.domain_zone_name != null ? {
+      "dns.googleapis.com" = contains(var.gcp_api_services_to_keep_upon_destroy, "dns.googleapis.com")
+    } : {}
+  )
+
   gcp_dependend_api_services = can(google_project_service.service) ? google_project_service.service[*] : []
   cors_allowed_default       = ["GET", "HEAD"]
   create_cors_configuration  = var.cors_allowed_origins != null ? true : false
@@ -16,7 +26,7 @@ locals {
 }
 
 resource "google_project_service" "service" {
-  for_each = toset(local.gcp_required_api_services)
+  for_each = local.gcp_required_api_services
   project  = var.gcp_project_id
   service  = each.key
 
@@ -25,8 +35,8 @@ resource "google_project_service" "service" {
     update = "10m"
   }
 
-  disable_dependent_services = var.disable_created_services_on_destroy
-  disable_on_destroy         = var.disable_created_services_on_destroy
+  disable_dependent_services = true
+  disable_on_destroy         = each.value
 }
 
 resource "google_storage_bucket" "website" {
