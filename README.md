@@ -13,8 +13,8 @@ module "gcp_website" {
   source                = "dashdevs/static-website/gcp"
   domain                = var.website_domain
   name_prefix           = var.name_prefix
-  gcp_api_services_list = ["storage.googleapis.com", "compute.googleapis.com", "cloudresourcemanager.googleapis.com"]
   domain_zone_name      = "exaple-domain-zone"
+  gcp_api_services_to_keep_upon_destroy = ["storage.googleapis.com"]
 }
 ```
 
@@ -31,7 +31,7 @@ module "gcp_website" {
 
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
-| <a name="input_gcp_api_services_list"></a> [gcp\_api\_services\_list](#input\_gcp\_api\_services\_list) | List of GCP API services to turn on, required for deployment  | `list(string)` | `[""]` | no |
+| <a name="input_gcp_api_services_to_keep_upon_destroy"></a> [gcp\_api\_services\_to_keep_upon_destroy](#input\_gcp\_api\_services\_to_keep_upon_destroy) | List of GCP API services to not disable upon destruction | `list(string)` | `[]` | no |
 | <a name="input_gcp_project_id"></a> [gcp\_project\_id](#input\_gcp\_project\_id) | ID of the GCP project | `string` | `null` | no |
 | <a name="input_domain_zone_name"></a> [domain\_zone\_name](#input\_domain\_zone\_name) | Domain zone name for CNAME record, if not empty then record will be created | `string` | `null` | no |
 | <a name="input_name_prefix"></a> [name\_prefix](#input\_name\_prefix) | Name prefix for the resources | `string` | n/a | yes |
