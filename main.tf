@@ -14,15 +14,6 @@ locals {
   cors_allowed_default       = ["GET", "HEAD"]
   create_cors_configuration  = var.cors_allowed_origins != null ? true : false
   cors_allowed_methods       = var.cors_allowed_methods_additional != null ? concat(local.cors_allowed_default, var.cors_allowed_methods_additional) : local.cors_allowed_default
-  region_parts               = split("-", var.region)
-  location_map = {
-    "europe"       = "EU"
-    "me"           = "EU"
-    "us"           = "US"
-    "northamerica" = "US"
-    "asia"         = "ASIA"
-  }
-  bucket_location = local.location_map[local.region_parts[0]]
 }
 
 resource "google_project_service" "service" {
@@ -41,7 +32,7 @@ resource "google_project_service" "service" {
 
 resource "google_storage_bucket" "website" {
   name     = var.name_prefix
-  location = local.bucket_location
+  location = var.bucket_location
   website {
     main_page_suffix = "index.html"
     not_found_page   = "index.html"
