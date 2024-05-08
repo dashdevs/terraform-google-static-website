@@ -7,8 +7,7 @@ variable "domain" {
 }
 
 variable "gcp_project_id" {
-  type    = string
-  default = null
+  type = string
 }
 
 variable "domain_zone_name" {
