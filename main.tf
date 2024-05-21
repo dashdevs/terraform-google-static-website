@@ -14,6 +14,8 @@ locals {
   cors_allowed_default       = ["GET", "HEAD"]
   create_cors_configuration  = var.cors_allowed_origins != null ? true : false
   cors_allowed_methods       = var.cors_allowed_methods_additional != null ? concat(local.cors_allowed_default, var.cors_allowed_methods_additional) : local.cors_allowed_default
+
+  redirects = [for redirect in var.redirects : "${redirect}.${var.domain}"]
 }
 
 resource "google_project_service" "service" {
@@ -91,14 +93,62 @@ resource "google_compute_url_map" "website" {
     strip_query            = false
     https_redirect         = true
   }
+  host_rule {
+    path_matcher = "primary"
+    hosts        = [var.domain]
+  }
+  path_matcher {
+    name            = "primary"
+    default_service = google_compute_backend_bucket.website.self_link
+  }
+  dynamic "host_rule" {
+    for_each = local.redirects != null ? [1] : []
+    content {
+      path_matcher = "secondary"
+      hosts        = toset(local.redirects)
+    }
+  }
+  dynamic "path_matcher" {
+    for_each = local.redirects != null ? [1] : []
+    content {
+      name = "secondary"
+      default_url_redirect {
+        host_redirect = var.domain
+        strip_query   = false
+      }
+    }
+  }
+}
 
-  depends_on = [local.gcp_dependend_api_services]
+resource "google_compute_url_map" "http_redirect" {
+  name = "http-redirect"
+
+  default_url_redirect {
+    redirect_response_code = "MOVED_PERMANENTLY_DEFAULT" // 301 redirect
+    strip_query            = false
+    https_redirect         = true
+  }
 }
 
 resource "google_compute_target_https_proxy" "website" {
   name             = "${var.name_prefix}-target-proxy"
   url_map          = google_compute_url_map.website.self_link
   ssl_certificates = [google_compute_managed_ssl_certificate.website.self_link]
+
+  depends_on = [local.gcp_dependend_api_services]
+}
+
+resource "google_compute_target_http_proxy" "website" {
+  name    = "test-proxy"
+  url_map = google_compute_url_map.http_redirect.self_link
+}
+
+resource "google_compute_global_forwarding_rule" "http-redirect" {
+  name        = "http-redirect"
+  ip_address  = google_compute_global_address.website.address
+  ip_protocol = "TCP"
+  port_range  = "80"
+  target      = google_compute_target_http_proxy.website.self_link
 
   depends_on = [local.gcp_dependend_api_services]
 }
@@ -119,6 +169,17 @@ resource "google_dns_record_set" "record" {
 
   project      = var.gcp_project_id
   name         = "${var.domain}."
+  managed_zone = var.domain_zone_name
+  type         = "A"
+  ttl          = 300
+  rrdatas      = [google_compute_global_address.website.address]
+}
+
+resource "google_dns_record_set" "www_record" {
+  count = var.domain_zone_name != null && local.redirects != null ? 1 : 0
+
+  project      = var.gcp_project_id
+  name         = "www.${var.domain}."
   managed_zone = var.domain_zone_name
   type         = "A"
   ttl          = 300
