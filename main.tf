@@ -15,7 +15,7 @@ locals {
   create_cors_configuration  = var.cors_allowed_origins != null ? true : false
   cors_allowed_methods       = var.cors_allowed_methods_additional != null ? concat(local.cors_allowed_default, var.cors_allowed_methods_additional) : local.cors_allowed_default
 
-  redirects = [for subdomain in var.subdomain_redirects : "${subdomain}.${var.domain}"]
+  redirects = [for subdomain_prefix in var.subdomain_redirects : "${subdomain_prefix}.${var.domain}"]
 }
 
 resource "google_project_service" "service" {
