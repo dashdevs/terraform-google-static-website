@@ -34,7 +34,7 @@ variable "gcp_api_services_to_keep_upon_destroy" {
   default = []
 }
 
-variable "redirects" {
+variable "subdomain_redirects" {
   type    = list(string)
   default = ["www"]
 }

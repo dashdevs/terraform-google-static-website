@@ -15,7 +15,7 @@ locals {
   create_cors_configuration  = var.cors_allowed_origins != null ? true : false
   cors_allowed_methods       = var.cors_allowed_methods_additional != null ? concat(local.cors_allowed_default, var.cors_allowed_methods_additional) : local.cors_allowed_default
 
-  redirects = [for redirect in var.redirects : "${redirect}.${var.domain}"]
+  redirects = [for hostname in var.subdomain_redirects : "${redirect}.${var.domain}"]
 }
 
 resource "google_project_service" "service" {
@@ -85,13 +85,13 @@ resource "google_compute_managed_ssl_certificate" "website" {
   depends_on = [local.gcp_dependend_api_services]
 }
 
-resource "google_compute_url_map" "website" {
+resource "google_compute_url_map" "https_map" {
   name = "${var.name_prefix}-url-map"
   default_url_redirect {
-    host_redirect          = google_compute_backend_bucket.website.self_link
-    redirect_response_code = "MOVED_PERMANENTLY_DEFAULT" // 301 redirect
-    strip_query            = false
-    https_redirect         = true
+    host_redirect = google_compute_backend_bucket.website.self_link
+    # redirect_response_code = "MOVED_PERMANENTLY_DEFAULT" // 301 redirect
+    strip_query = false
+    # https_redirect         = true
   }
   host_rule {
     path_matcher = "primary"
@@ -102,16 +102,16 @@ resource "google_compute_url_map" "website" {
     default_service = google_compute_backend_bucket.website.self_link
   }
   dynamic "host_rule" {
-    for_each = local.redirects != null ? [1] : []
+    for_each = var.subdomain_redirects != null ? [1] : []
     content {
-      path_matcher = "secondary"
+      path_matcher = "subdomain_redirects"
       hosts        = toset(local.redirects)
     }
   }
   dynamic "path_matcher" {
-    for_each = local.redirects != null ? [1] : []
+    for_each = var.subdomain_redirects != null ? [1] : []
     content {
-      name = "secondary"
+      name = "subdomain_redirects"
       default_url_redirect {
         host_redirect = var.domain
         strip_query   = false
@@ -120,7 +120,7 @@ resource "google_compute_url_map" "website" {
   }
 }
 
-resource "google_compute_url_map" "http_redirect" {
+resource "google_compute_url_map" "http_map" {
   name = "http-redirect"
 
   default_url_redirect {
@@ -130,36 +130,37 @@ resource "google_compute_url_map" "http_redirect" {
   }
 }
 
-resource "google_compute_target_https_proxy" "website" {
-  name             = "${var.name_prefix}-target-proxy"
+resource "google_compute_target_https_proxy" "https_target" {
+  name             = "${var.name_prefix}-https-proxy"
   url_map          = google_compute_url_map.website.self_link
   ssl_certificates = [google_compute_managed_ssl_certificate.website.self_link]
 
   depends_on = [local.gcp_dependend_api_services]
 }
 
-resource "google_compute_target_http_proxy" "website" {
-  name    = "test-proxy"
+resource "google_compute_target_http_proxy" "http_target" {
+  name    = "${var.name_prefix}-http-proxy"
   url_map = google_compute_url_map.http_redirect.self_link
 }
 
-resource "google_compute_global_forwarding_rule" "http-redirect" {
-  name        = "http-redirect"
-  ip_address  = google_compute_global_address.website.address
-  ip_protocol = "TCP"
-  port_range  = "80"
-  target      = google_compute_target_http_proxy.website.self_link
 
-  depends_on = [local.gcp_dependend_api_services]
-}
-
-resource "google_compute_global_forwarding_rule" "rule" {
-  name                  = "${var.name_prefix}-forwarding-rule"
+resource "google_compute_global_forwarding_rule" "https_rule" {
+  name                  = "${var.name_prefix}-https-rule"
   load_balancing_scheme = "EXTERNAL"
   ip_address            = google_compute_global_address.website.address
   ip_protocol           = "TCP"
   port_range            = "443"
-  target                = google_compute_target_https_proxy.website.self_link
+  target                = google_compute_target_https_proxy.https_target.self_link
+
+  depends_on = [local.gcp_dependend_api_services]
+}
+
+resource "google_compute_global_forwarding_rule" "http_rule" {
+  name        = "${var.name_prefix}-http-rule"
+  ip_address  = google_compute_global_address.website.address
+  ip_protocol = "TCP"
+  port_range  = "80"
+  target      = google_compute_target_http_proxy.http_target.self_link
 
   depends_on = [local.gcp_dependend_api_services]
 }
@@ -176,7 +177,7 @@ resource "google_dns_record_set" "record" {
 }
 
 resource "google_dns_record_set" "www_record" {
-  count = var.domain_zone_name != null && local.redirects != null ? 1 : 0
+  count = var.domain_zone_name != null && var.subdomain_redirects != null ? 1 : 0
 
   project      = var.gcp_project_id
   name         = "www.${var.domain}."
