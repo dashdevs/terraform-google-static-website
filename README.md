@@ -23,7 +23,6 @@ module "gcp_website" {
 
 | Name | Version |
 |------|---------|
-| <a name="provider_aws"></a> [aws](#provider\_aws) | >= 3.34 |
 | <a name="provider_google"></a> [google](#provider\_google) | >= 5.17.0 |
 
 
@@ -37,8 +36,9 @@ module "gcp_website" {
 | <a name="input_bucket_location"></a> [bucket_location](#input\_bucket\_location) | Variable for the location of the bucket (https://cloud.google.com/storage/docs/locations)| `list(string)` | null | no |
 | <a name="input_gcp_api_services_to_keep_upon_destroy"></a> [gcp\_api\_services\_to_keep_upon_destroy](#input\_gcp\_api\_services\_to_keep_upon_destroy) | List of GCP API services that should not be disabled during destruction . Available values in list are `storage.googleapis.com`, `compute.googleapis.com`, `cloudresourcemanager.googleapis.com`, `dns.googleapis.com` (https://console.cloud.google.com/apis/library)| `list(string)` | [] | no |
 | <a name="input_domain_zone_name"></a> [domain\_zone\_name](#input\_domain\_zone\_name) | Domain zone name for CNAME record, if not empty then record will be created | `string` | null | no |
-| <a name="input_cors"></a> [cors_allowed_origins](#input\_cors_\_allowed_origins) | Used to declare domains from which the site will be accessed as a storage of static resources | `list(string)` | null | no |
-| <a name="input_cors"></a> [cors_allowed_methods_additional](#input\_cors\_allowed_methods_additional) |List of additional CORS methods in addition to `GET` and `HEAD` | `list(string)` | null | no |
+| <a name="input_cors_allowed_origins"></a> [cors_allowed_origins](#input\_cors\_allowed_origins) | Used to declare domains from which the site will be accessed as a storage of static resources | `list(string)` | null | no |
+| <a name="input_cors_allowed_methods_additional"></a> [cors_allowed_methods_additional](#input\_cors\_allowed_methods_additional) |List of additional CORS methods in addition to `GET` and `HEAD` | `list(string)` | null | no |
+| <a name="input_subdomain_redirects"></a> [subdomain_redirects](#input\_subdomain\_redirects) | List of additional subdomain prefixes from where to redirect to main domain, such as `www` | `list(string)` | ["www"] | no |
 ## Outputs
 
 | Name | Description |
